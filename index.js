@@ -26,51 +26,41 @@
         }
     };
 
-    var applyFilterToPixel = function (pixel) {
+    var applyFilterToImageData = function (data) {
         var filters = {
-            invert: function (pixel) {
-                pixel[0] = 255 - pixel[0];
-                pixel[1] = 255 - pixel[1];
-                pixel[2] = 255 - pixel[2];
-
-                return pixel;
+            invert: function (r, g, b) {
+                return [255 - r, 255 - g, 255 - b];
             },
-            grayscale: function (pixel) {
-                var r = pixel[0];
-                var g = pixel[1];
-                var b = pixel[2];
+            grayscale: function (r, g, b) {
                 var v = 0.2126 * r + 0.7152 * g + 0.0722 * b;
-
-                pixel[0] = pixel[1] = pixel[2] = v;
-
-                return pixel;
+                return [v, v, v];
             },
-            threshold: function (pixel) {
-                var r = pixel[0];
-                var g = pixel[1];
-                var b = pixel[2];
+            threshold: function (r, g, b) {
                 var v = (0.2126 * r + 0.7152 * g + 0.0722 * b >= 128) ? 255 : 0;
-                pixel[0] = pixel[1] = pixel[2] = v;
-
-                return pixel;
+                return [v, v, v];
             }
         };
 
-        var filterName = document.querySelector('.controls__filter').value;
+        var filterName = document.querySelector('.controls__filter').value,
+            filterFunction = filters[filterName];
 
-        return filters[filterName](pixel);
+        for(var i = 0, filteredPixel; i < data.length; i += 4) {
+          filteredPixel = filterFunction(data[i], data[i + 1], data[i + 2]);
+
+          data[i]     = filteredPixel[0];
+          data[i + 1] = filteredPixel[1];
+          data[i + 2] = filteredPixel[2];
+        }
     };
 
     var applyFilter = function () {
-        for (var x = 0; x < canvas.width; x++) {
-            for (var y = 0; y < canvas.height; y++) {
-                var pixel = canvas.getContext('2d').getImageData(x, y, 1, 1);
+      var imageData = canvas.getContext('2d').getImageData(0, 0, canvas.width, canvas.height);
 
-                pixel.data = applyFilterToPixel(pixel.data);
+      // Apply filter
+      applyFilterToImageData(imageData.data);
 
-                canvas.getContext('2d').putImageData(pixel, x, y);
-            }
-        }
+      // overwrite original image
+      canvas.getContext('2d').putImageData(imageData, 0, 0);
     };
 
     var captureFrame = function () {
